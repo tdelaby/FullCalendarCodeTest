@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset='utf-8' />
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <link href='css/main.css' rel='stylesheet' />
+    <script src='js/main.js'></script>
+    <script src="https://apis.google.com/js/platform.js?onload=onLoadCallback"></script>
+    <script src="https://apis.google.com/js/client:plusone.js" type="application/javascript"></script>
+    <script src='https://apis.google.com/js/client.js?onload=handleClientLoad'></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+
+
+    <script>
+
+        document.addEventListener('DOMContentLoaded', function () {
+
+            function getCookie(cookieName) {
+                let cookie = {};
+                document.cookie.split(';').forEach(function (el) {
+                    let [key, value] = el.split('=');
+                    cookie[key.trim()] = value;
+                })
+                return cookie[cookieName];
+            }
+
+            var calendarId = getCookie('calendarId');
+            var timeZone = getCookie('timeZone');
+            var event = {
+                'summary': 'Test Event',
+                'description': 'Testing FullCalendars event insert',
+                'start': {
+                    'dateTime': '',
+                    'timeZone': ''
+                },
+                'end': {
+                    'dateTime': '',
+                    'timeZone': ''
+                }
+            };
+
+            function makeGoogleApiCall() {
+                gapi.client.load('calendar', 'v3', function () {
+                    var request = gapi.client.calendar.events.insert({
+                        'calendarId': calendarId,
+                        'resource': event
+                    });
+
+                    request.execute(function (resp) {
+                        console.log(resp);
+                    });
+                });
+            }
+
+            var calendarEl = document.getElementById('calendar');
+            var calendar = new FullCalendar.Calendar(calendarEl, {
+                headerToolbar: {
+                    left: 'prevYear,prev,next,nextYear addEventButton',
+                    center: 'title',
+                    right: 'dayGridMonth,dayGridWeek,dayGridDay,listYear'
+                },
+
+                displayEventTime: true, // don't show the time column in list view
+
+                // THIS KEY WON'T WORK IN PRODUCTION!!!
+                // To make your own Google API key, follow the directions here:
+                // http://fullcalendar.io/docs/google_calendar/
+                googleCalendarApiKey: 'AIzaSyAFUjAzEghposlZdHqOmFR3b2bYxsxuYc8',
+
+                // US Holidays
+                events: {
+                    googleCalendarId: calendarId,
+                    className: 'gcal-event' // an option!
+                },
+                eventClick: function (arg) {
+
+                    // opens events in a popup window
+                    window.open(arg.event.url, '_blank', 'width=700,height=600');
+
+                    // prevents current tab from navigating
+                    arg.jsEvent.preventDefault();
+                },
+                customButtons: {
+                    addEventButton: {
+                        text: 'Add Event',
+                        click: function () {
+                            var title = prompt('Event Title:');
+                            var description = prompt('Event Description:');
+                            var startDateStr = prompt('Enter a start date in YYYY-MM-DD format');
+                            var startTimeStr = prompt('Enter an start time in HH:MM:SS format');
+                            var endDateStr = prompt('Enter a date date in YYYY-MM-DD format');
+                            var endTimeStr = prompt('Enter an end time in HH:MM:SS format');
+                            var start = new Date(startDateStr + 'T' + startTimeStr);
+                            var end = new Date(endDateStr + 'T' + endTimeStr);
+
+
+                            if (!isNaN(start.valueOf())) { // valid?
+                                calendar.addEvent({
+                                    title: title,
+                                    description: description,
+                                    start: start,
+                                    end: end,
+                                    allDay: false
+                                });
+                                alert('Great. Now, update your database...');
+                            } else {
+                                alert('Invalid date.');
+                            }
+
+                            event = {
+                                'summary': title,
+                                'description': description,
+                                'start': {
+                                    'dateTime': start,
+                                    'timeZone': timeZone
+                                },
+                                'end': {
+                                    'dateTime': end,
+                                    'timeZone': timeZone
+                                }
+                            };
+
+                            makeGoogleApiCall();
+                        }
+                    }
+                }
+
+            });
+            calendar.render();
+        });
+
+    </script>
+</head>
+<body>
+
+    <!--Add buttons to initiate auth sequence and sign out-->
+    <button id="authorize_button" onclick="handleAuthClick()">Authorize Google</button>
+    <button id="signout_button" onclick="handleSignoutClick()">Sign Out</button>
+
+    <div id='calendar'></div>
+
+
+
+    <script type="text/javascript">
+
+        // TODO(developer): Set to client ID and API key from the Developer Console
+        const CLIENT_ID = '144358720010-2os59v735bqdem0o9r3nh6ma31b5mciu.apps.googleusercontent.com';
+        const API_KEY = 'AIzaSyAFUjAzEghposlZdHqOmFR3b2bYxsxuYc8';
+
+        // Discovery doc URL for APIs used by the quickstart
+        const DISCOVERY_DOC = 'https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest';
+
+        // Authorization scopes required by the API; multiple scopes can be
+        // included, separated by spaces.
+        const SCOPES = 'https://www.googleapis.com/auth/calendar';
+
+        let tokenClient;
+        let gapiInited = false;
+        let gisInited = false;
+
+        document.getElementById('authorize_button').style.visibility = 'hidden';
+        document.getElementById('signout_button').style.visibility = 'hidden';
+
+        /**
+         * Callback after api.js is loaded.
+         */
+        function gapiLoaded() {
+            gapi.load('client', intializeGapiClient);
+        }
+
+        /**
+         * Callback after the API client is loaded. Loads the
+         * discovery doc to initialize the API.
+         */
+        async function intializeGapiClient() {
+            await gapi.client.init({
+                apiKey: API_KEY,
+                discoveryDocs: [DISCOVERY_DOC],
+            });
+            gapiInited = true;
+            maybeEnableButtons();
+        }
+
+        /**
+         * Callback after Google Identity Services are loaded.
+         */
+        function gisLoaded() {
+            tokenClient = google.accounts.oauth2.initTokenClient({
+                client_id: CLIENT_ID,
+                scope: SCOPES,
+                callback: '', // defined later
+            });
+            gisInited = true;
+            maybeEnableButtons();
+        }
+
+        /**
+         * Enables user interaction after all libraries are loaded.
+         */
+        function maybeEnableButtons() {
+            if (gapiInited && gisInited) {
+                document.getElementById('authorize_button').style.visibility = 'visible';
+            }
+        }
+
+        /**
+         *  Sign in the user upon button click.
+         */
+        function handleAuthClick() {
+            tokenClient.callback = async (resp) => {
+                if (resp.error !== undefined) {
+                    throw (resp);
+                }
+                document.getElementById('signout_button').style.visibility = 'visible';
+                document.getElementById('authorize_button').innerText = 'Refresh';
+                await setCalendarId();
+            };
+
+            if (gapi.client.getToken() === null) {
+                // Prompt the user to select a Google Account and ask for consent to share their data
+                // when establishing a new session.
+                tokenClient.requestAccessToken({ prompt: 'consent' });
+            } else {
+                // Skip display of account chooser and consent dialog for an existing session.
+                tokenClient.requestAccessToken({ prompt: '' });
+            }
+        }
+
+        /**
+         *  Sign out the user upon button click.
+         */
+        function handleSignoutClick() {
+            const token = gapi.client.getToken();
+            if (token !== null) {
+                google.accounts.oauth2.revoke(token.access_token);
+                gapi.client.setToken('');
+                document.getElementById('content').innerText = '';
+                document.getElementById('authorize_button').innerText = 'Authorize';
+                document.getElementById('signout_button').style.visibility = 'hidden';
+            }
+        }
+
+        /**
+       * Print the summary and start datetime/date of the next ten events in
+       * the authorized user's calendar. If no events are found an
+       * appropriate message is printed.
+       */
+        async function setCalendarId() {
+            let response;
+            try {
+                const request = {
+                    'calendarId': 'primary',
+                    'timeMin': (new Date()).toISOString(),
+                    'showDeleted': false,
+                    'singleEvents': true,
+                    'maxResults': 10,
+                    'orderBy': 'startTime',
+                };
+                response = await gapi.client.calendar.events.list(request);
+            } catch (err) {
+                document.getElementById('content').innerText = err.message;
+                return;
+            }
+
+            document.cookie = 'calendarId=' + response.result.summary;
+            document.cookie = 'timeZone=' + response.result.timeZone;
+
+        }
+
+    </script>
+    <script async defer src="https://apis.google.com/js/api.js" onload="gapiLoaded()"></script>
+    <script async defer src="https://accounts.google.com/gsi/client" onload="gisLoaded()"></script>
+
+
+</body>
+</html>
