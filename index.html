@@ -16,20 +16,13 @@
 
         document.addEventListener('DOMContentLoaded', function () {
 
-            function getCookie(cookieName) {
-                let cookie = {};
-                document.cookie.split(';').forEach(function (el) {
-                    let [key, value] = el.split('=');
-                    cookie[key.trim()] = value;
-                })
-                return cookie[cookieName];
-            }
+            //Starting 2 Hour test fix
 
-            var calendarId = getCookie('calendarId');
-            var timeZone = getCookie('timeZone');
+            var calendarId = sessionStorage.getItem('calendarId');
+            var timeZone = sessionStorage.getItem('timeZone');
             var event = {
-                'summary': 'Test Event',
-                'description': 'Testing FullCalendars event insert',
+                'summary': '',
+                'description': '',
                 'start': {
                     'dateTime': '',
                     'timeZone': ''
@@ -39,6 +32,12 @@
                     'timeZone': ''
                 }
             };
+
+            if (sessionStorage.getItem('authorized') === null) {
+                // Prompt the user to select a Google Account and ask for consent to share their data
+                // when establishing a new session.
+                tokenClient.requestAccessToken({ prompt: 'consent' });
+            }
 
             function makeGoogleApiCall() {
                 gapi.client.load('calendar', 'v3', function () {
@@ -221,6 +220,7 @@
                 // Prompt the user to select a Google Account and ask for consent to share their data
                 // when establishing a new session.
                 tokenClient.requestAccessToken({ prompt: 'consent' });
+                sessionStorage.setItem('authorized', gapi.client.getToken());
             } else {
                 // Skip display of account chooser and consent dialog for an existing session.
                 tokenClient.requestAccessToken({ prompt: '' });
@@ -263,8 +263,8 @@
                 return;
             }
 
-            document.cookie = 'calendarId=' + response.result.summary;
-            document.cookie = 'timeZone=' + response.result.timeZone;
+            sessionStorage.setItem('calendarId', response.result.summary);
+            sessionStorage.setItem('timeZone', response.result.summary);
 
         }
 
