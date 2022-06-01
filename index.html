@@ -14,7 +14,7 @@
 
     <script>
 
-        //Pausing assesment
+        //Unpausing assesment
 
 
         const CLIENT_ID = '144358720010-2os59v735bqdem0o9r3nh6ma31b5mciu.apps.googleusercontent.com';
@@ -86,7 +86,7 @@
                 await setCalendarId();
             };
 
-            
+
 
             if (gapi.client.getToken() === null) {
                 // Prompt the user to select a Google Account and ask for consent to share their data
@@ -113,7 +113,7 @@
                 document.getElementById('content').innerText = '';
                 document.getElementById('authorize_button').innerText = 'Authorize';
                 document.getElementById('signout_button').style.visibility = 'hidden';
-                
+
             }
         }
 
@@ -146,9 +146,9 @@
 
         document.addEventListener('DOMContentLoaded', function () {
 
-            
 
-            
+
+
 
             var calendarId = sessionStorage.getItem('calendarId');
             var timeZone = sessionStorage.getItem('timeZone');
@@ -165,11 +165,11 @@
                 }
             };
 
-            
 
-            
 
-           
+
+
+
 
 
             //if (sessionStorage.getItem('authorized') === null) {
@@ -281,9 +281,9 @@
 
 
     <script type="text/javascript">
-            document.getElementById('authorize_button').style.visibility = 'hidden';
-            document.getElementById('signout_button').style.visibility = 'hidden';
-        
+        document.getElementById('authorize_button').style.visibility = 'hidden';
+        document.getElementById('signout_button').style.visibility = 'hidden';
+
 
     </script>
     <script async defer src="https://apis.google.com/js/api.js" onload="gapiLoaded()"></script>
